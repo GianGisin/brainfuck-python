@@ -33,28 +33,20 @@ def tokenize(code: str) -> list[Token]:
         match code[ptr]:
             case ">":
                 tokens.append(Token(TokenType.TapeRight))
-                ptr += 1
             case "<":
                 tokens.append(Token(TokenType.TapeLeft))
-                ptr += 1
             case "+":
                 tokens.append(Token(TokenType.Inc))
-                ptr += 1
             case "-":
                 tokens.append(Token(TokenType.Dec))
-                ptr += 1
             case "[":
                 tokens.append(Token(TokenType.OpenBracket))
-                ptr += 1
             case "]":
                 tokens.append(Token(TokenType.CloseBracket))
-                ptr += 1
             case ",":
                 tokens.append(Token(TokenType.GetChar))
-                ptr += 1
             case ".":
                 tokens.append(Token(TokenType.PutChar))
-                ptr += 1
             case _:
                 # way conditional loops are used to make comments in bf, checking for the validity of tokens
                 # at parse time seems to be impossible
@@ -63,7 +55,7 @@ def tokenize(code: str) -> list[Token]:
                 if tokens[-1].ttype != TokenType.Unknown:
                     tokens.append(Token(TokenType.Unknown, code[ptr]))
 
-                ptr += 1
+        ptr += 1
     return tokens
 
 
@@ -100,15 +92,12 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
                 memptr += 1
                 if memptr > memmax:
                     memmax = memptr
-                iptr += 1
             case TokenType.TapeLeft:
                 memptr -= 1
-                iptr += 1
             case TokenType.Inc:
                 if memptr >= 0 and memptr < mem_size:
                     # memory over/underflows without warning
                     mem[memptr] = (mem[memptr] + 1) % 256
-                    iptr += 1
 
                 else:
                     print(f"ERROR: memory index out of range at {memptr}")
@@ -117,7 +106,6 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
                 if memptr >= 0 and memptr < mem_size:
                     # memory over/underflows without warning
                     mem[memptr] = (mem[memptr] - 1) % 256
-                    iptr += 1
 
                 else:
                     print(f"ERROR: memory index out of range at {memptr}")
@@ -133,8 +121,6 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
                     print(f"ERROR: memory index out of range at {memptr}")
                     exit(1)
 
-                iptr += 1
-
             case TokenType.CloseBracket:
                 if memptr >= 0 and memptr < mem_size:
                     # jump back to beginning of loop if mem is not 0
@@ -145,8 +131,6 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
                     print(f"ERROR: memory index out of range at {memptr}")
                     exit(1)
 
-                iptr += 1
-
             case TokenType.GetChar:
                 char = sys.stdin.read(1)
                 # char = input()[0]
@@ -156,12 +140,9 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
                     print(f"ERROR: memory index out of range at {memptr}")
                     exit(1)
 
-                iptr += 1
-
             case TokenType.PutChar:
                 if memptr >= 0 and memptr < mem_size:
                     print(chr(mem[memptr]), end="")
-                    iptr += 1
                 else:
                     print(f"ERROR: memory index out of range at {memptr}")
                     exit(1)
@@ -169,6 +150,8 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
             case TokenType.Unknown:
                 print(f'ERROR: unknown command at {iptr} "{tokens[iptr].value}"')
                 exit(1)
+
+        iptr += 1
 
     print("")
     # print(f"mem = {mem}")
