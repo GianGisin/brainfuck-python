@@ -194,5 +194,7 @@ if __name__ == "__main__":
 
 
 # TODO: contract multiple equal statements (that are not brackets)
+# e.g.: ++++++++ => Token(TokenType.Inc, 8)
+# this might require lookahead features
 # TODO: Compile?
 # TODO: cleaner error handling
