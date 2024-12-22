@@ -249,3 +249,4 @@ if __name__ == "__main__":
 # TODO: Compile?
 # TODO: cleaner error handling
 # TODO: Infinite Tape?
+# TODO: BF To python "transpiler"
