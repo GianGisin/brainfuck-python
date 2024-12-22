@@ -1,6 +1,7 @@
 from enum import Enum, auto
 from typing import Optional, Any
 
+import time
 import sys
 
 
@@ -23,6 +24,35 @@ class Token:
 
     def __repr__(self):
         return f"Token({str(self.ttype)}, {str(self.value)})"
+
+
+class Tracker:
+    def __init__(self, tokens: list[Token]):
+        self.tokens = tokens
+        self.ptr = 0
+
+    def peek(self):
+        if self.has_next():
+            return self.tokens[self.ptr]
+
+    def consume(self):
+
+        r = self.tokens[self.ptr]
+        self.ptr += 1
+        return r
+
+    def has_next(self):
+        return self.ptr < len(self.tokens)
+
+
+def time_function(f):
+    def wrapper(*args, **kwargs):
+        t1 = time.perf_counter()
+        f(*args, **kwargs)
+        t2 = time.perf_counter()
+        print(f"{f.__name__} took {t2-t1} seconds to execute")
+
+    return wrapper
 
 
 def tokenize(code: str) -> list[Token]:
@@ -59,6 +89,21 @@ def tokenize(code: str) -> list[Token]:
     return tokens
 
 
+def contract_expressions(tokens: list[Token]) -> list[Token]:
+    new_tokens: list[Token] = []
+    track = Tracker(tokens)
+    while track.has_next():
+        t = track.consume()
+        if t.ttype != TokenType.OpenBracket and t.ttype != TokenType.CloseBracket:
+            count = 1
+            while track.has_next() and t.ttype == track.peek().ttype:
+                count += 1
+                track.consume()
+            t.value = count
+        new_tokens.append(t)
+    return new_tokens
+
+
 def match_brackets(tokens: list[Token]) -> list[Token]:
     ptr = 0
     stack = []
@@ -81,35 +126,42 @@ def match_brackets(tokens: list[Token]) -> list[Token]:
     return tokens
 
 
+@time_function
 def interpret(tokens: list[Token], mem_size: int) -> bool:
     mem = bytearray(mem_size)
     memmax = 0
     iptr = 0
     memptr = 0
     while -1 < iptr < len(tokens):
+        val = tokens[iptr].value if tokens[iptr].value else 1
         match tokens[iptr].ttype:
             case TokenType.TapeRight:
-                memptr += 1
-                if memptr > memmax:
-                    memmax = memptr
+                for _ in range(val):
+                    memptr += 1
+                    if memptr > memmax:
+                        memmax = memptr
+
             case TokenType.TapeLeft:
-                memptr -= 1
+                for _ in range(val):
+                    memptr -= 1
             case TokenType.Inc:
-                if memptr >= 0 and memptr < mem_size:
-                    # memory over/underflows without warning
-                    mem[memptr] = (mem[memptr] + 1) % 256
+                for _ in range(val):
+                    if memptr >= 0 and memptr < mem_size:
+                        # memory over/underflows without warning
+                        mem[memptr] = (mem[memptr] + 1) % 256
 
-                else:
-                    print(f"ERROR: memory index out of range at {memptr}")
-                    exit(1)
+                    else:
+                        print(f"ERROR: memory index out of range at {memptr}")
+                        exit(1)
             case TokenType.Dec:
-                if memptr >= 0 and memptr < mem_size:
-                    # memory over/underflows without warning
-                    mem[memptr] = (mem[memptr] - 1) % 256
+                for _ in range(val):
+                    if memptr >= 0 and memptr < mem_size:
+                        # memory over/underflows without warning
+                        mem[memptr] = (mem[memptr] - 1) % 256
 
-                else:
-                    print(f"ERROR: memory index out of range at {memptr}")
-                    exit(1)
+                    else:
+                        print(f"ERROR: memory index out of range at {memptr}")
+                        exit(1)
 
             case TokenType.OpenBracket:
                 if memptr >= 0 and memptr < mem_size:
@@ -132,20 +184,22 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
                     exit(1)
 
             case TokenType.GetChar:
-                char = sys.stdin.read(1)
-                # char = input()[0]
-                if memptr >= 0 and memptr < mem_size:
-                    mem[memptr] = ord(char)
-                else:
-                    print(f"ERROR: memory index out of range at {memptr}")
-                    exit(1)
+                for _ in range(val):
+                    char = sys.stdin.read(1)
+                    # char = input()[0]
+                    if memptr >= 0 and memptr < mem_size:
+                        mem[memptr] = ord(char)
+                    else:
+                        print(f"ERROR: memory index out of range at {memptr}")
+                        exit(1)
 
             case TokenType.PutChar:
-                if memptr >= 0 and memptr < mem_size:
-                    print(chr(mem[memptr]), end="")
-                else:
-                    print(f"ERROR: memory index out of range at {memptr}")
-                    exit(1)
+                for _ in range(val):
+                    if memptr >= 0 and memptr < mem_size:
+                        print(chr(mem[memptr]), end="")
+                    else:
+                        print(f"ERROR: memory index out of range at {memptr}")
+                        exit(1)
 
             case TokenType.Unknown:
                 print(f'ERROR: unknown command at {iptr} "{tokens[iptr].value}"')
@@ -168,17 +222,30 @@ def main() -> None:
     with open(filename, "r") as f:
         text = "".join(f.read().split())
 
+    # TODO: having all these different functions might not be the best approach
+    # tokens = tokenize(text)
+    # print(f"tokens before contraction: {len(tokens)}")
+    # tokens = contract_expressions(tokens)
+    # print(f"tokens after contraction: {len(tokens)}")
+    # tokens = match_brackets(tokens)
+    # interpret(tokens, 1000)
+
+    test_contraction_time(text, 1000)
+
+
+def test_contraction_time(text: str, mem_size: int):
+    print(f"without contraction")
     tokens = match_brackets(tokenize(text))
-    interpret(tokens, 1000)
+    interpret(tokens, mem_size)
+    print(f"with contraction")
+    tokens = match_brackets(contract_expressions(tokenize(text)))
+    interpret(tokens, mem_size)
 
 
 if __name__ == "__main__":
     main()
 
 
-# TODO: contract multiple equal statements (that are not brackets)
-# e.g.: ++++++++ => Token(TokenType.Inc, 8)
-# this might require lookahead features
 # TODO: Compile?
 # TODO: cleaner error handling
 # TODO: Infinite Tape?

@@ -1,1 +1,3 @@
 .python-version
+.vscode/launch.json
+.vscode*
