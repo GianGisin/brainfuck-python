@@ -181,3 +181,4 @@ if __name__ == "__main__":
 # this might require lookahead features
 # TODO: Compile?
 # TODO: cleaner error handling
+# TODO: Infinite Tape?
