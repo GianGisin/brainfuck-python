@@ -46,6 +46,7 @@ class Interpreter(CommandListener):
         self.mem = bytearray(mem_size)
         self.memmax = 0
         self.memptr = 0
+        self.mem_size = mem_size
 
     def tr(self, n):
         for _ in range(n):
@@ -261,16 +262,20 @@ def dispatch_commands(tokens: list[Token], listener: CommandListener) -> bool:
                 listener.dec(val)
 
             case TokenType.OpenBracket:
-                iptr = listener.ob(tokens[iptr].value)
+                ret = listener.ob(tokens[iptr].value)
+                if ret:
+                    iptr = ret
 
             case TokenType.CloseBracket:
-                iptr = listener.cb(tokens[iptr].value)
+                ret = listener.cb(tokens[iptr].value)
+                if ret:
+                    iptr = ret
 
             case TokenType.GetChar:
                 listener.gc(val)
 
             case TokenType.PutChar:
-                listener.gc(val)
+                listener.pc(val)
 
             case TokenType.Unknown:
                 print(f'ERROR: unknown command at {iptr} "{tokens[iptr].value}"')
@@ -298,8 +303,10 @@ def main() -> None:
     # print(f"tokens after contraction: {len(tokens)}")
     # tokens = match_brackets(tokens)
     # interpret(tokens, 1000)
+    tokens = match_brackets(contract_expressions(tokenize(text)))
+    interpret(tokens, 1000)
 
-    test_contraction_time(text, 1000)
+    # test_contraction_time(text, 1000)
 
 
 def test_contraction_time(text: str, mem_size: int):
@@ -320,5 +327,3 @@ if __name__ == "__main__":
 # TODO: Infinite Tape?
 
 # TODO: BF To python "transpiler"
-# TODO: make interpreter agnostic to what happens after the match statement
-# -> make it call to functions of an interface that is implemented in both interpreter and transpiler
