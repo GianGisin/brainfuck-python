@@ -1,8 +1,36 @@
 from enum import Enum, auto
 from typing import Optional, Any
+from abc import ABC, abstractmethod
 
 import time
 import sys
+
+
+class CommandListener(ABC):
+    @abstractmethod
+    def tr(self):
+        pass
+
+    def tl(self):
+        pass
+
+    def inc(self):
+        pass
+
+    def dec(self):
+        pass
+
+    def ob(self):
+        pass
+
+    def cb(self):
+        pass
+
+    def gc(self):
+        pass
+
+    def pc(self):
+        pass
 
 
 class TokenType(Enum):
@@ -249,4 +277,7 @@ if __name__ == "__main__":
 # TODO: Compile?
 # TODO: cleaner error handling
 # TODO: Infinite Tape?
+
 # TODO: BF To python "transpiler"
+# TODO: make interpreter agnostic to what happens after the match statement
+# -> make it call to functions of an interface that is implemented in both interpreter and transpiler
