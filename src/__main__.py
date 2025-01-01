@@ -40,6 +40,83 @@ class CommandListener(ABC):
         pass
 
 
+class Interpreter(CommandListener):
+    def __init__(self, mem_size):
+        super().__init__()
+
+        self.mem = bytearray(mem_size)
+        self.memmax = 0
+        self.memptr = 0
+
+    def tr(self, n):
+        for _ in range(n):
+            self.memptr += 1
+            if self.memptr > self.memmax:
+                self.memmax = self.memptr
+
+    def tl(self, n):
+        for _ in range(n):
+            self.memptr -= 1
+
+    def inc(self, n):
+        for _ in range(n):
+            if self.memptr >= 0 and self.memptr < self.mem_size:
+                # memory over/underflows without warning
+                self.mem[self.memptr] = (self.mem[self.memptr] + 1) % 256
+
+            else:
+                print(f"ERROR: memory index out of range at {self.memptr}")
+                exit(1)
+
+    def dec(self, n):
+        for _ in range(n):
+            if self.memptr >= 0 and self.memptr < self.mem_size:
+                # memory over/underflows without warning
+                self.mem[self.memptr] = (self.mem[self.memptr] - 1) % 256
+
+            else:
+                print(f"ERROR: memory index out of range at {self.memptr}")
+                exit(1)
+
+    def ob(self, to):
+        if self.memptr >= 0 and self.memptr < self.mem_size:
+            # jump back to beginning of loop if mem is not 0
+            if self.mem[self.memptr] == 0:
+                return to
+
+        else:
+            print(f"ERROR: memory index out of range at {self.memptr}")
+            exit(1)
+
+    def cb(self, to):
+        if self.memptr >= 0 and self.memptr < self.mem_size:
+            # jump back to beginning of loop if mem is not 0
+            if self.mem[self.memptr] != 0:
+                return to
+
+        else:
+            print(f"ERROR: memory index out of range at {self.memptr}")
+            exit(1)
+
+    def gc(self, n):
+        for _ in range(n):
+            char = sys.stdin.read(1)
+            # char = input()[0]
+            if self.memptr >= 0 and self.memptr < self.mem_size:
+                self.mem[self.memptr] = ord(char)
+            else:
+                print(f"ERROR: memory index out of range at {self.memptr}")
+                exit(1)
+
+    def pc(self, n):
+        for _ in range(n):
+            if self.memptr >= 0 and self.memptr < self.mem_size:
+                print(chr(self.mem[self.memptr]), end="")
+            else:
+                print(f"ERROR: memory index out of range at {self.memptr}")
+                exit(1)
+
+
 class TokenType(Enum):
     TapeLeft = auto()
     TapeRight = auto()
