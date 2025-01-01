@@ -206,9 +206,10 @@ class Tracker:
 def time_function(f):
     def wrapper(*args, **kwargs):
         t1 = time.perf_counter()
-        f(*args, **kwargs)
+        res = f(*args, **kwargs)
         t2 = time.perf_counter()
         print(f"{f.__name__} took {t2-t1} seconds to execute")
+        return res
 
     return wrapper
 
@@ -340,18 +341,40 @@ def dispatch_commands(tokens: list[Token], listener: CommandListener) -> bool:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
+    # usage:
+    # - run examples/hello_world.b
+    # - transpile examples/hello_world.b hello_world.py
+
+    if len(sys.argv) < 3:
         print("ERROR: no file given")
-        print(f"Correct usage: {sys.argv[0]} <filename.b>")
+        print(f"Correct usage:")
+        print(f"{sys.argv[0]} run <file.b>")
+        print(f"{sys.argv[0]} transpile <file.b> <file.py>")
         exit(1)
 
-    filename = sys.argv[1]
+    mode = sys.argv[1]
+    filename = sys.argv[2]
     with open(filename, "r") as f:
-        text = "".join(f.read().split())
+        source = "".join(f.read().split())
+    if len(sys.argv) == 4:
+        output_file = sys.argv[3]
 
-    tokens = match_brackets(contract_expressions(tokenize(text)))
-    # interpret(tokens, 1000)
-    transpile(tokens, 1000)
+    tokens = match_brackets(contract_expressions(tokenize(source)))
+
+    match mode:
+        case "run":
+            interpret(tokens, 1000)
+
+        case "transpile":
+            try:
+
+                with open(output_file, "w") as f:
+                    f.write(transpile(tokens, 1000))
+            except:
+                print("Whopsies")
+        case _:
+            print(f'ERROR: unknown mode "{mode}"')
+            exit(1)
 
 
 def test_contraction_time(text: str, mem_size: int):
@@ -365,10 +388,3 @@ def test_contraction_time(text: str, mem_size: int):
 
 if __name__ == "__main__":
     main()
-
-
-# TODO: Compile?
-# TODO: cleaner error handling
-# TODO: Infinite Tape?
-
-# TODO: BF To python "transpiler"
