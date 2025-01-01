@@ -24,11 +24,11 @@ class CommandListener(ABC):
         pass
 
     @abstractmethod
-    def ob(self, to):
+    def ob(self, to) -> int:
         pass
 
     @abstractmethod
-    def cb(self, to):
+    def cb(self, to) -> int:
         pass
 
     @abstractmethod
@@ -77,7 +77,7 @@ class Interpreter(CommandListener):
                 print(f"ERROR: memory index out of range at {self.memptr}")
                 exit(1)
 
-    def ob(self, to):
+    def ob(self, to) -> int:
         if self.memptr >= 0 and self.memptr < self.mem_size:
             # jump back to beginning of loop if mem is not 0
             if self.mem[self.memptr] == 0:
@@ -87,7 +87,7 @@ class Interpreter(CommandListener):
             print(f"ERROR: memory index out of range at {self.memptr}")
             exit(1)
 
-    def cb(self, to):
+    def cb(self, to) -> int:
         if self.memptr >= 0 and self.memptr < self.mem_size:
             # jump back to beginning of loop if mem is not 0
             if self.mem[self.memptr] != 0:
@@ -238,79 +238,39 @@ def match_brackets(tokens: list[Token]) -> list[Token]:
 
 
 @time_function
-def interpret(tokens: list[Token], mem_size: int) -> bool:
-    mem = bytearray(mem_size)
-    memmax = 0
+def interpret(tokens: list[Token], mem_size: int):
+    listener = Interpreter(mem_size)
+    dispatch_commands(tokens, listener)
+
+
+def dispatch_commands(tokens: list[Token], listener: CommandListener) -> bool:
     iptr = 0
-    memptr = 0
     while -1 < iptr < len(tokens):
         val = tokens[iptr].value if tokens[iptr].value else 1
         match tokens[iptr].ttype:
             case TokenType.TapeRight:
-                for _ in range(val):
-                    memptr += 1
-                    if memptr > memmax:
-                        memmax = memptr
+                listener.tr(val)
 
             case TokenType.TapeLeft:
-                for _ in range(val):
-                    memptr -= 1
+                listener.tl(val)
+
             case TokenType.Inc:
-                for _ in range(val):
-                    if memptr >= 0 and memptr < mem_size:
-                        # memory over/underflows without warning
-                        mem[memptr] = (mem[memptr] + 1) % 256
+                listener.inc(val)
 
-                    else:
-                        print(f"ERROR: memory index out of range at {memptr}")
-                        exit(1)
             case TokenType.Dec:
-                for _ in range(val):
-                    if memptr >= 0 and memptr < mem_size:
-                        # memory over/underflows without warning
-                        mem[memptr] = (mem[memptr] - 1) % 256
-
-                    else:
-                        print(f"ERROR: memory index out of range at {memptr}")
-                        exit(1)
+                listener.dec(val)
 
             case TokenType.OpenBracket:
-                if memptr >= 0 and memptr < mem_size:
-                    # jump over loop if current mem is 0
-                    if mem[memptr] == 0:
-                        iptr = tokens[iptr].value
-
-                else:
-                    print(f"ERROR: memory index out of range at {memptr}")
-                    exit(1)
+                iptr = listener.ob(tokens[iptr].value)
 
             case TokenType.CloseBracket:
-                if memptr >= 0 and memptr < mem_size:
-                    # jump back to beginning of loop if mem is not 0
-                    if mem[memptr] != 0:
-                        iptr = tokens[iptr].value
-
-                else:
-                    print(f"ERROR: memory index out of range at {memptr}")
-                    exit(1)
+                iptr = listener.cb(tokens[iptr].value)
 
             case TokenType.GetChar:
-                for _ in range(val):
-                    char = sys.stdin.read(1)
-                    # char = input()[0]
-                    if memptr >= 0 and memptr < mem_size:
-                        mem[memptr] = ord(char)
-                    else:
-                        print(f"ERROR: memory index out of range at {memptr}")
-                        exit(1)
+                listener.gc(val)
 
             case TokenType.PutChar:
-                for _ in range(val):
-                    if memptr >= 0 and memptr < mem_size:
-                        print(chr(mem[memptr]), end="")
-                    else:
-                        print(f"ERROR: memory index out of range at {memptr}")
-                        exit(1)
+                listener.gc(val)
 
             case TokenType.Unknown:
                 print(f'ERROR: unknown command at {iptr} "{tokens[iptr].value}"')
@@ -319,8 +279,6 @@ def interpret(tokens: list[Token], mem_size: int) -> bool:
         iptr += 1
 
     print("")
-    # print(f"mem = {mem}")
-    print(f"max memory size used: {memmax} bytes")
 
 
 def main() -> None:
