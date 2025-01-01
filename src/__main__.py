@@ -40,6 +40,52 @@ class CommandListener(ABC):
         pass
 
 
+class Transpiler(CommandListener):
+    def __init__(self, mem_size):
+        self.mem_size = mem_size
+        self.code = ""
+        self.indent = 1
+
+    def _indent(self, s: str) -> str:
+        return "    " * self.indent + s
+
+    def _code_append(self, *args: str):
+        for a in args:
+            self.code += self._indent(a) + "\n"
+
+    def get_code(self) -> str:
+        pre = f"def main():\n    mem = bytearray({self.mem_size})\n    mem_ptr = 0\n\n"
+        post = "    print(" ")\n\nif __name__ == '__main__':\n    main()\n"
+        return pre + self.code + post
+
+    def tr(self, n):
+        self._code_append(f"mem_ptr += {n}")
+
+    def tl(self, n):
+        self._code_append(f"mem_ptr -= {n}")
+
+    def inc(self, n):
+        self._code_append(f"mem[mem_ptr] += {n}")
+
+    def dec(self, n):
+        self._code_append(f"mem[mem_ptr] -= {n}")
+
+    def ob(self, to) -> int:
+        self._code_append("")
+        self._code_append("while mem[mem_ptr] != 0:")
+        self.indent += 1
+
+    def cb(self, to) -> int:
+        self.indent -= 1
+        self._code_append("")
+
+    def gc(self, n):
+        self._code_append("mem[mem_ptr] = ord(input()[0])")
+
+    def pc(self, n):
+        self._code_append("print(chr(mem[mem_ptr]), end='')")
+
+
 class Interpreter(CommandListener):
     def __init__(self, mem_size):
 
@@ -239,6 +285,13 @@ def match_brackets(tokens: list[Token]) -> list[Token]:
 
 
 @time_function
+def transpile(tokens: list[Token], mem_size: int):
+    listener = Transpiler(mem_size)
+    dispatch_commands(tokens, listener)
+    return listener.get_code()
+
+
+@time_function
 def interpret(tokens: list[Token], mem_size: int):
     listener = Interpreter(mem_size)
     dispatch_commands(tokens, listener)
@@ -287,7 +340,7 @@ def dispatch_commands(tokens: list[Token], listener: CommandListener) -> bool:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("ERROR: no file given")
         print(f"Correct usage: {sys.argv[0]} <filename.b>")
         exit(1)
@@ -296,17 +349,9 @@ def main() -> None:
     with open(filename, "r") as f:
         text = "".join(f.read().split())
 
-    # TODO: having all these different functions might not be the best approach
-    # tokens = tokenize(text)
-    # print(f"tokens before contraction: {len(tokens)}")
-    # tokens = contract_expressions(tokens)
-    # print(f"tokens after contraction: {len(tokens)}")
-    # tokens = match_brackets(tokens)
-    # interpret(tokens, 1000)
     tokens = match_brackets(contract_expressions(tokenize(text)))
-    interpret(tokens, 1000)
-
-    # test_contraction_time(text, 1000)
+    # interpret(tokens, 1000)
+    transpile(tokens, 1000)
 
 
 def test_contraction_time(text: str, mem_size: int):
