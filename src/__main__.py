@@ -42,7 +42,6 @@ class CommandListener(ABC):
 
 class Interpreter(CommandListener):
     def __init__(self, mem_size):
-        super().__init__()
 
         self.mem = bytearray(mem_size)
         self.memmax = 0
