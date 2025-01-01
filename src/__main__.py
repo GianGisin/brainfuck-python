@@ -8,28 +8,35 @@ import sys
 
 class CommandListener(ABC):
     @abstractmethod
-    def tr(self):
+    def tr(self, n):
         pass
 
-    def tl(self):
+    @abstractmethod
+    def tl(self, n):
         pass
 
-    def inc(self):
+    @abstractmethod
+    def inc(self, n):
         pass
 
-    def dec(self):
+    @abstractmethod
+    def dec(self, n):
         pass
 
-    def ob(self):
+    @abstractmethod
+    def ob(self, to):
         pass
 
-    def cb(self):
+    @abstractmethod
+    def cb(self, to):
         pass
 
-    def gc(self):
+    @abstractmethod
+    def gc(self, n):
         pass
 
-    def pc(self):
+    @abstractmethod
+    def pc(self, n):
         pass
 
 
